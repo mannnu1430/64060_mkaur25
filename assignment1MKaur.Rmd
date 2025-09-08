@@ -1,0 +1,77 @@
+---
+title: "FML_Assn1"
+author: "Manpreet Kaur"
+date: "2025-09-08"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+## Step 1: Load Required Libraries
+```{r}
+library(dplyr)
+library(ggplot2)
+```
+## Step 2: Import Dataset
+```{r}
+data("mtcars")
+df <- mtcars
+
+# Convert some numeric columns to categorical for analysis
+df$cyl <- as.factor(df$cyl)
+df$gear <- as.factor(df$gear)
+df$carb <- as.factor(df$carb)
+
+head(df)
+
+```
+
+## Step 3: Descriptive Statistics
+```{r}
+# Quantitative summaries
+summary(select(df, mpg, hp, wt, qsec))
+
+# Frequency tables for categorical variables
+table(df$cyl)
+table(df$gear)
+table(df$carb)
+```
+
+## Step 4: Variable Transformation
+```{r}
+df$log_hp <- log(df$hp)
+
+head(select(df, hp, log_hp))
+```
+
+## Step 5: Visualization
+Histogram of a Quantitative Variable
+```{r}
+ggplot(df, aes(x = mpg)) +
+  geom_histogram(binwidth = 2, fill = "steelblue", color = "black") +
+  labs(title = "Histogram of Miles per Gallon (mpg)",
+       x = "Miles per Gallon",
+       y = "Count")
+
+```
+
+Scatterplot of Two Quantitative Variables
+```{r}
+ggplot(df, aes(x = wt, y = mpg, color = cyl)) +
+  geom_point(size = 3) +
+  labs(title = "Scatterplot of Weight vs MPG by Cylinders",
+       x = "Car Weight (1000 lbs)",
+       y = "Miles per Gallon") +
+  theme_minimal()
+
+```
+
+```{r}
+```
+
+```{r}
+```
+
+```{r}
+```
