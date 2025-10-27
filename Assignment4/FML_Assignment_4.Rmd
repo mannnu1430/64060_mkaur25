@@ -1,0 +1,344 @@
+---
+title: "FML_Assignment_4"
+author: "Manpreet"
+date: "2025-10-27"
+output:
+  word_document: default
+  html_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+# Load necessary libraries
+library(tidyverse)
+library(cluster)
+library(factoextra)
+library(readr)
+library(dplyr)
+library(flexclust)
+
+```
+
+```{r}
+set.seed(123)
+pharma_data <- read.csv("D:/Pharmaceuticals.csv")
+# View first few rows
+head(pharma_data)
+
+# Check structure
+str(pharma_data)
+
+```
+
+**Interpretation**
+
+Cluster 1 includes firms with moderate market performance and “Moderate Buy” ratings.
+Cluster 2 has mixed firms from different countries with average profitability and mixed analyst opinions.
+Cluster 3 represents strong global firms like Abbott and AstraZeneca with high ROE, ROA, and “Buy” ratings.
+Cluster 4 includes smaller firms with moderate returns and higher leverage.
+Cluster 5 has top performers like Pfizer and Johnson & Johnson, showing the best financial strength and “Strong Buy” recommendations.
+
+Overall, clusters 3 and 5 show the strongest financial and market positions, while clusters 1–2 are moderate and cluster 4 is relatively weaker.
+
+```{r}
+View(pharma_data)
+
+```
+
+```{r}
+modified_pharma_data <- pharma_data[ ,c(3:11)]
+summary(modified_pharma_data)
+str(modified_pharma_data)
+dim(modified_pharma_data)
+
+```
+
+**Interpretation **
+
+1. The dataset has 21 pharmaceutical firms and 9 numeric variables.
+2. The Market Cap ranges widely from 0.41 to 199.47, showing that both small and large firms are included.
+3. The PE Ratio (3.6–82.5) and ROE (3.9–62.9) also vary a lot, meaning there are big differences in company profitability.
+4. ROA values (1.4–20.3) and Net Profit Margin (2.6–25.5) show how efficiently each firm uses assets and manages profits.
+5. The Leverage ratio (0–3.51) indicates that some firms are debt-free, while others rely more on borrowing.
+6. Overall, the data shows high variation across financial indicators, suggesting a mix of low, medium, and high-performing pharmaceutical firms.
+```{r}
+modified_pharma_data <- scale(modified_pharma_data)
+
+```
+
+
+```{r}
+# Elbow Method
+
+fviz_nbclust(modified_pharma_data, kmeans, method = "wss", k.max = 10,
+linecolor = "steelblue") +
+labs(title = "Elbow Method: Optimal Number of Clusters",
+x = "Number of Clusters (k)",
+y = "Total Within-Cluster Sum of Squares (WSS)")
+
+# Silhouette Method
+
+fviz_nbclust(modified_pharma_data, kmeans, method = "silhouette", k.max = 10) +
+labs(title = "Silhouette Method: Optimal Number of Clusters",
+x = "Number of Clusters (k)",
+y = "Average Silhouette Width")
+
+
+
+```
+**Interpretation**
+
+The Elbow Method graph shows a sharp drop in WSS (within-cluster sum of squares) until k = 3, after which the curve starts to flatten. This suggests that 3 clusters is the optimal number, as adding more clusters gives only a small improvement in variance explained.
+
+The Silhouette Method shows the highest average silhouette width around k = 5, indicating that 5 clusters also provide a good fit with clear separation between groups.
+
+Combining both methods, the dataset can be best grouped into 3 to 5 clusters, with 3 clusters offering a balanced and meaningful segmentation of the pharmaceutical firms.
+
+```{r}
+# Let's assume 3 clusters based on elbow/silhouette results
+set.seed(123)
+pharma_kmeans <- kmeans(modified_pharma_data, centers = 3, nstart = 25)
+
+# View results
+pharma_kmeans
+
+
+```
+**Interpretation**
+
+The K-means model divided the pharmaceutical firms into 3 clusters with sizes 4, 11, and 6.
+
+Cluster 1 has the lowest mean values for most variables (like Market Cap, ROE, and ROA), showing smaller and less profitable firms.
+
+Cluster 2 shows moderate positive values, meaning these companies have average financial performance and balanced risk.
+
+Cluster 3 has high leverage and revenue growth but negative efficiency ratios (ROE and ROA), suggesting that these firms are riskier but have strong growth potential.
+
+Overall, Cluster 1 represents low-performing firms, Cluster 2 represents stable firms, and Cluster 3 represents high-growth but high-risk firms. The model explains 46.7% of the total variation, indicating a fair clustering structure.
+
+```{r}
+fviz_cluster(pharma_kmeans, data = modified_pharma_data,
+             ellipse.type = "euclid",
+             palette = "jco",
+             ggtheme = theme_minimal(),
+             main = "K-Means Clustering of Pharmaceutical Firms")
+
+```
+
+**Interpretation**
+
+The K-means clustering plot shows how the pharmaceutical firms are grouped into three distinct clusters.
+
+Cluster 1 (Blue) represents firms with relatively lower profitability and efficiency. These firms are positioned closely together, indicating similar performance levels.
+
+Cluster 2 (Yellow) includes firms that are moderate performers, showing balanced financial ratios and steady returns.
+
+Cluster 3 (Gray) contains firms with higher financial strength and stability, possibly large companies with better overall performance.
+
+The clusters are well separated, meaning the K-means algorithm has effectively identified differences among the firms based on financial indicators. The first two dimensions (Dim1 and Dim2) together explain over 60% of the total variance, providing a clear view of group distinctions.
+
+**Question 2**
+
+```{r}
+pharma_kmeans$center
+pharma_kmeans$size
+pharma_kmeans$cluster
+pharma_kmeans$withinss
+
+```
+**Interpretation**
+
+The K-means algorithm formed three clusters with 4, 11, and 6 firms respectively.
+
+Cluster 1 has negative values for most variables, especially in ROE, ROA, and Net Profit Margin, meaning these firms are less profitable and have weaker financial efficiency.
+
+Cluster 2 shows mostly positive averages, especially in ROE, ROA, and Net Profit Margin, indicating financially strong and stable firms with balanced performance.
+
+Cluster 3 shows a mix of high leverage and revenue growth, suggesting high-risk, high-reward firms that are aggressive in expansion but less stable in profits.
+
+Overall, the clustering effectively separates the firms into low-performing (Cluster 1), moderate/stable (Cluster 2), and high-risk, growth-oriented (Cluster 3) categories.
+
+```{r}
+pharma_data$cluster <- pharma_kmeans$cluster
+
+# Now calculate averages per cluster
+avg_of_cluster <- pharma_data %>%
+  group_by(cluster) %>%
+  summarise(across(where(is.numeric), mean, na.rm = TRUE))
+avg_of_cluster
+```
+
+**Interpretation**
+
+The table shows the average financial values for each cluster of pharmaceutical firms:
+
+Cluster 1:
+Firms here have small market size (avg Market Cap = 21.76) and low profitability (ROE = 11.3, Net Profit Margin = 6.65).
+These represent smaller, less profitable firms with limited growth.
+
+Cluster 2:
+These firms have the highest Market Cap (97.11), strong ROE (35.7), and good profit margins (20.17).
+They are large, stable, and financially strong companies with efficient operations.
+
+Cluster 3:
+Firms in this group have low Market Cap (9.24) but high revenue growth (23.49) and high leverage (1.25).
+This shows high-risk, high-growth firms—smaller companies that are expanding quickly but depend heavily on debt.
+
+```{r}
+modified_pharma_data_dist <- get_dist(modified_pharma_data)
+modified_pharma_data_dist
+fviz_dist(modified_pharma_data_dist)
+```
+
+**Interpretation**
+
+The heatmap shows the Euclidean distance between pharmaceutical firms based on their financial indicators.
+
+The red diagonal line represents each firm’s distance from itself (which is always 0).
+
+Red or light-colored areas indicate firms that are similar to each other — they have close financial characteristics.
+
+Blue or darker areas represent firms that are very different from each other in terms of performance or size.
+
+Overall, the plot suggests that some firms have strong similarities (clusters of red zones), while others are quite distinct (blue zones) — supporting the idea that grouping (clustering) the firms is meaningful and useful for analysis
+```{r}
+pharma_data$cluster <- pharma_kmeans$cluster
+table(pharma_data$cluster)
+```
+
+**Interpretation**
+
+The table shows the number of firms in each cluster formed by the K-means algorithm:
+
+Cluster 1: 4 firms
+
+Cluster 2: 11 firms
+
+Cluster 3: 6 firms
+
+This means most pharmaceutical firms (11 out of 21) fall into Cluster 2, making it the largest group.
+Cluster 1 is the smallest, with only 4 firms, showing that these companies have unique financial features compared to the others.
+
+Overall, this distribution suggests that while most firms share similar financial patterns (Cluster 2), there are smaller groups (Clusters 1 and 3) with distinct financial behaviors or strategies.
+
+**Question 3**
+```{r}
+table(pharma_data$cluster, pharma_data$Median_Recommendation) 
+table(pharma_data$cluster, pharma_data$Location)
+table(pharma_data$cluster, pharma_data$Exchange)
+```
+**Interpretation**
+
+The tables show how clusters differ based on analyst recommendations, location, and stock exchange:
+
+Median Recommendation:
+
+Cluster 1 mainly has firms rated as Moderate Buy or Strong Buy, meaning analysts are generally positive about these companies.
+
+Cluster 2 includes more Moderate and Hold ratings, showing mixed market opinions.
+
+Cluster 3 has Moderate Buy and Sell ratings, meaning performance expectations are uneven.
+
+Location:
+
+Most firms in Cluster 2 are from the US, showing that the largest group mainly consists of American companies.
+
+Cluster 1 includes firms from Ireland, UK, and US, showing geographic diversity.
+
+Cluster 3 firms are located in the US only.
+
+Exchange:
+
+Most firms are listed on the NYSE, especially in Cluster 2 and Cluster 3.
+
+A few firms are on NASDAQ, and only one on AMEX.
+
+**Question 4**
+```{r}
+pharma_sorted <- pharma_data[order(pharma_data$cluster), c("Name", "Median_Recommendation","Location","Exchange","cluster")]
+
+
+```
+
+```{r}
+cat("=== CLUSTER 1 - ALL FEATURES ===\n")
+cluster1 <- pharma_data[pharma_data$cluster == 1, ]
+print(cluster1)
+
+```
+
+**Interpretation – Cluster 1**
+
+Cluster 1 contains 4 pharmaceutical companies — Allergan Inc., Amersham plc, Bayer AG, and Pharmacia Corporation.
+
+These firms share similar financial characteristics:
+
+They have moderate market capitalization (between 6 and 56 billion).
+
+Their PE Ratios and ROE values are relatively high, meaning good profitability and investor confidence.
+
+ROA and Asset Turnover show average efficiency in using assets.
+
+Leverage values are low to moderate, suggesting limited debt usage.
+summary:
+Cluster 1 firms are financially stable, moderately growing, and have good profitability, placing them in a medium-performing group with balanced risk and return.
+
+```{r}
+cat("\n=== CLUSTER 2 - ALL FEATURES ===\n")
+cluster2 <- pharma_data[pharma_data$cluster == 2, ]
+print(cluster2)
+
+```
+
+**Interpretation – Cluster 2**
+
+Cluster 2 contains 11 large pharmaceutical companies, such as Abbott Laboratories, AstraZeneca, Johnson & Johnson, Pfizer, and Merck & Co.
+
+These firms share strong financial features:
+
+High market capitalization — these are well-established global leaders.
+
+Low Beta values — they show low stock volatility, meaning they are stable and less risky investments.
+
+Moderate to high ROE and ROA — indicates strong profitability and efficient use of assets.
+
+Moderate PE Ratios — reflect steady investor confidence without being overvalued.
+
+Low leverage — they rely less on debt financing, showing financial stability.
+
+summary:
+Cluster 2 represents large, financially strong, and stable multinational pharmaceutical firms with consistent profitability and low financial risk
+
+```{r}
+# CLUSTER 3
+cat("\n=== CLUSTER 3 - ALL FEATURES ===\n")
+cluster3 <- pharma_data[pharma_data$cluster == 3, ]
+print(cluster3)
+
+```
+
+**Interpretation – Cluster 3**
+
+Cluster 3 includes 6 pharmaceutical companies — Aventis, Chattem Inc., Elan Corporation, IVAX Corporation, Medicis Pharmaceutical Corp., and Watson Pharmaceuticals Inc.
+
+These firms share these characteristics:
+
+Smaller market capitalizations, meaning they are medium to small-sized companies compared to others.
+
+Higher Beta values (up to 1.08) — they show more volatility and higher investment risk.
+
+Moderate PE Ratios and ROE values — indicate average profitability.
+
+ROA values are lower than large firms, showing less asset efficiency.
+
+Leverage is higher for some firms, meaning greater debt dependency.
+
+Summary:
+Cluster 3 represents smaller and riskier pharmaceutical firms with moderate performance and higher financial leverage, suggesting potential for growth but also more risk compared to Clusters 1 and 2.
+
+
+
+
